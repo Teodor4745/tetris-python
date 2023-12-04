@@ -1,13 +1,22 @@
+from tetris_game import run_game
 import pygame
 import sys
-import subprocess
+import os
 
-# Define the window sizes
 WINDOW_SIZES = {
     "Small": "400x400",
     "Medium": "500x500",
     "Large": "600x600"
 }
+
+def resource_path(relative_path):
+    try:
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+
+    return os.path.join(base_path, relative_path)
+
 
 def draw_button(screen, text, position, size):
     font = pygame.font.Font(None, 36)
@@ -41,8 +50,8 @@ def setup_screen():
                     pos = buttons[text][0]
                     if pos[0] <= x <= pos[0] + pos[2] and pos[1] <= y <= pos[1] + pos[3]:
                         pygame.quit()
-                        # Correctly pass the window size as a string
-                        subprocess.run(["python", "tetris_game.py", WINDOW_SIZES[text]])
+                        width, height = map(int, WINDOW_SIZES[text].split('x'))
+                        run_game(width, height)
                         return
 
         for text, (pos, size) in buttons.items():

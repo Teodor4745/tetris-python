@@ -1,10 +1,8 @@
-# Screen dimensions
 import random
 import sys
 
 import pygame
 
-# Colors
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 RED = (255, 0, 0)
@@ -118,7 +116,7 @@ class Tetris:
         self.grid = [[0 for _ in range(width)] for _ in range(height)]
         self.current_piece = self.new_piece()
         self.game_over = False
-        self.score = 0  # Add score attribute
+        self.score = 0
 
     def new_piece(self):
         shape = random.choice(SHAPES)
@@ -135,9 +133,8 @@ class Tetris:
         return True
 
     def clear_lines(self):
-        """Clear the lines that are full and return the number of cleared lines"""
         lines_cleared = 0
-        for i, row in enumerate(self.grid[:-1]):
+        for i, row in enumerate(self.grid):
             if all(cell != 0 for cell in row):
                 lines_cleared += 1
                 del self.grid[i]
@@ -145,23 +142,21 @@ class Tetris:
         return lines_cleared
 
     def lock_piece(self, piece):
-        """Lock the piece in place and create a new piece"""
         for i, row in enumerate(piece.shape[piece.rotation % len(piece.shape)]):
             for j, cell in enumerate(row):
                 if cell == 'O':
                     self.grid[piece.y + i][piece.x + j] = piece.color
-        # Clear the lines and update the score
+
         lines_cleared = self.clear_lines()
-        self.score += lines_cleared * 100  # Update the score based on the number of cleared lines
-        # Create a new piece
+        self.score += lines_cleared * 100
+
         self.current_piece = self.new_piece()
-        # Check if the game is over
+
         if not self.valid_move(self.current_piece, 0, 0, 0):
             self.game_over = True
         return lines_cleared
 
     def update(self):
-        """Move the tetromino down one cell"""
         if not self.game_over:
             if self.valid_move(self.current_piece, 0, 1, 0):
                 self.current_piece.y += 1
@@ -169,7 +164,6 @@ class Tetris:
                 self.lock_piece(self.current_piece)
 
     def draw(self, screen):
-        """Draw the grid and the current piece"""
         for y, row in enumerate(self.grid):
             for x, cell in enumerate(row):
                 if cell:
@@ -194,7 +188,6 @@ def draw_scores(screen, score, high_score, x, y):
     screen.blit(high_score_text, (x, y + 40))
 
 def draw_game_over(screen, x, y):
-    """Draw the game over text on the screen"""
     font = pygame.font.Font(None, 48)
     text = font.render("Game Over", True, RED)
     screen.blit(text, (x, y))
@@ -212,102 +205,94 @@ def save_high_score(file_path, score):
         file.write(str(score))
 
 
-def main():
-    # Initialize pygame
+def run_game(width,height):
     pygame.init()
     pygame.font.init()
-    if len(sys.argv) > 1:
-        WIDTH, HEIGHT = map(int, sys.argv[1].split('x'))
+    if width and height:
+        WIDTH = width
+        HEIGHT = height
     else:
         WIDTH, HEIGHT = 400, 400
 
     global GRID_WIDTH, SQUARE_SIZE
 
-    # Set grid width based on window width
-    if WIDTH <= 400:  # Small window
+    if WIDTH <= 400:
         GRID_WIDTH = 12
-    elif WIDTH <= 500:  # Medium window
+    elif WIDTH <= 500:
         GRID_WIDTH = 16
-    else:  # Large window
+    else:
         GRID_WIDTH = 20
 
-    SQUARE_SIZE = WIDTH // GRID_WIDTH  # Dynamically calculate square size
+    SQUARE_SIZE = WIDTH // GRID_WIDTH
     GRID_HEIGHT = HEIGHT // SQUARE_SIZE
 
     screen = pygame.display.set_mode((WIDTH, HEIGHT))
     pygame.display.set_caption('Tetris')
-    # Create a clock object
+
     clock = pygame.time.Clock()
-    # Create a Tetris object
+
     game = Tetris(GRID_WIDTH, GRID_HEIGHT)
 
     fall_time = 0
-    fall_speed = 80  # You can adjust this value to change the falling speed, it's in milliseconds
+    fall_speed = 80
 
     high_score_file = 'high_score.txt'
     high_score = read_high_score(high_score_file)
 
     while True:
-        # Fill the screen with black
         screen.fill(BLACK)
         for event in pygame.event.get():
-            # Check for the QUIT event
+
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
-            # Check for the KEYDOWN event
+
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_LEFT:
                     if game.valid_move(game.current_piece, -1, 0, 0):
-                        game.current_piece.x -= 1  # Move the piece to the left
+                        game.current_piece.x -= 1
                 if event.key == pygame.K_RIGHT:
                     if game.valid_move(game.current_piece, 1, 0, 0):
-                        game.current_piece.x += 1  # Move the piece to the right
+                        game.current_piece.x += 1
                 if event.key == pygame.K_DOWN:
                     if game.valid_move(game.current_piece, 0, 1, 0):
-                        game.current_piece.y += 1  # Move the piece down
+                        game.current_piece.y += 1
                 if event.key == pygame.K_UP:
                     if game.valid_move(game.current_piece, 0, 0, 1):
-                        game.current_piece.rotation += 1  # Rotate the piece
+                        game.current_piece.rotation += 1
                 if event.key == pygame.K_SPACE:
                     while game.valid_move(game.current_piece, 0, 1, 0):
-                        game.current_piece.y += 1  # Move the piece down until it hits the bottom
-                    game.lock_piece(game.current_piece)  # Lock the piece in place
-        # Get the number of milliseconds since the last frame
+                        game.current_piece.y += 1
+                    game.lock_piece(game.current_piece)
+
         delta_time = clock.get_rawtime()
-        # Add the delta time to the fall time
+
         fall_time += delta_time
         if fall_time >= fall_speed:
-            # Move the piece down
+
             game.update()
-            # Reset the fall time
+
             fall_time = 0
-        # Draw the score on the screen
+
         draw_scores(screen, game.score, high_score, 10, 10)
-        # Draw the grid and the current piece
+
         game.draw(screen)
         if game.game_over:
-            # Draw the "Game Over" message
+
             draw_game_over(screen, WIDTH // 2 - 100, HEIGHT // 2 - 30)
-            # Add this condition to restart the game on any key press
+
             for event in pygame.event.get():
                 if event.type == pygame.KEYDOWN:
                     game = Tetris(WIDTH // SQUARE_SIZE, HEIGHT // SQUARE_SIZE)
                     game.game_over = False
                     continue
-            # You can add a "Press any key to restart" message here
-            # Check for the KEYDOWN event
+
             if game.score > high_score:
                 high_score = game.score
                 save_high_score(high_score_file, high_score)
             if event.type == pygame.KEYDOWN:
-                # Create a new Tetris object
+
                 game = Tetris(WIDTH // SQUARE_SIZE, HEIGHT // SQUARE_SIZE)
-            # Update the display
+
         pygame.display.flip()
-        # Set the framerate
         clock.tick(60)
-
-
-if __name__ == "__main__":
-    main()
